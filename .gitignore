@@ -1,3 +1,7 @@
+#Additionals
+ipch
+*.sdf
+
 # Compiled Object files
 *.slo
 *.lo
@@ -21,8 +25,3 @@
 *.la
 *.a
 *.lib
-
-# Executables
-*.exe
-*.out
-*.app
