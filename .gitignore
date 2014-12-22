@@ -1,6 +1,7 @@
 #Additionals
 ipch
 *.sdf
+EvoImages/Debug/
 
 # Compiled Object files
 *.slo

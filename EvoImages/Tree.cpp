@@ -1,19 +1,19 @@
 #include "Tree.h"
 
-#pragma warning( disable : 4244 )
+#pragma warning ( disable: 4244 ) //int to float conversion
 
 Tree::Tree()
 {
 	coeff = 1;
 	head = Tree::Generate(0);
-	string s = head->GetString();
 	head->Simplify();
-	s = head->GetString();
+	tNext = NULL;
 }
 
 Tree::~Tree()
 {
 	delete head;
+	delete tNext;
 }
 
 TreeNode* Tree::Generate(int depth) //static
@@ -31,22 +31,39 @@ TreeNode* Tree::Generate(int depth) //static
 	return node;
 }
 
-float Tree::GetCoeff()
+void Tree::ModifyCoeff(float mod)
 {
-	return coeff;
-}
-
-void Tree::SetCoeff(float value)
-{
-	coeff = value;
+	coeff *= mod;
+	if(tNext != NULL)
+		tNext->ModifyCoeff(mod);
 }
 
 string Tree::GetString()
 {
-	return head->GetString();
+	string res = to_string(static_cast<long double>(coeff));
+	res += " * (" + head->GetString() + ")";
+	if(tNext != NULL)
+		res += " + " + tNext->GetString();
+	return res;
 }
 
 float Tree::GetResult(int x, int y)
 {
-	return head->Calculate(x, y) * coeff;
+	float res = head->Calculate(x, y) * coeff;
+	if(tNext != NULL)
+		res += tNext->GetResult(x, y);
+	return res;
+}
+
+void Tree::AttachTrees(Tree *t1, Tree *t2)
+{
+	if(tNext != NULL)
+	{
+		tNext->AttachTrees(t1, t2);
+	}
+	else if(t1 != NULL)
+	{
+		tNext = t1;
+		tNext->AttachTrees(t2, NULL);
+	}
 }

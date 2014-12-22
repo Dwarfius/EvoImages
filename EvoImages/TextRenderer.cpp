@@ -25,11 +25,11 @@ bool TextRenderer::Init(LPDIRECT3DDEVICE9 device, char *faceName, int size,
 	return true;
 }
 
-void TextRenderer::Print(char *text, int xPos, int yPos, DWORD color, LPD3DXSPRITE sprite,
+int TextRenderer::Print(char *text, int xPos, int yPos, DWORD color, LPD3DXSPRITE sprite,
 	                     int textBoxWidth, int textBoxHeight, DWORD alignment)
 {
 	if(!font)
-		return;
+		return 0;
 
 	DWORD format = DT_EXPANDTABS;
 	if(textBoxWidth == 0)

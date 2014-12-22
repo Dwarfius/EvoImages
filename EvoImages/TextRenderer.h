@@ -11,7 +11,7 @@ public:
 	void Release();
 	bool Init(LPDIRECT3DDEVICE9 device, char *faceName, 
 		      int size, bool bold = false, bool italic = false);
-	void Print(char *text, int xPos, int yPos, DWORD color, 
+	int Print(char *text, int xPos, int yPos, DWORD color, 
 		       LPD3DXSPRITE sprite = NULL, int textBoxWidth = 0, 
 			   int textBoxHeight = 0, DWORD alignment = DT_LEFT);
 	void OnLostDevice();

@@ -4,9 +4,12 @@
 
 const int size = 200;
 
+#pragma warning ( disable: 4244 ) //int to float conversion
+
 Game::Game()
 {
 	engine = NULL;
+	offset = 0;
 }
 
 //sets the engine
@@ -52,7 +55,7 @@ void Game::OnCreateDevice(LPDIRECT3DDEVICE9 device)
 	text.Init(device, "Arial", 12);
 
 	//creating images
-	UpdateImages();
+	UpdateImages(true);
 }
 
 //This callback function will be called immidiately after the D3DDevice is created and Reset.
@@ -115,13 +118,14 @@ void Game::OnRenderFrame(LPDIRECT3DDEVICE9 device)
 	sprite->Begin(D3DXSPRITE_ALPHABLEND | D3DXSPRITE_SORT_TEXTURE);
 	for(int i=0; i<3; i++)
 	{
-		int index = i*3;
-		int yPos = (size + 50) * i;
-		sprite->Draw(mainTexture[i], NULL, NULL, &D3DXVECTOR3(0, (float)yPos, 0), color);
+		int xPos = (size + 50) * i;
+		sprite->Draw(mainTexture[i], NULL, NULL, &D3DXVECTOR3(xPos, offset, 0), color);
 		
-		text.Print(&(treeStrings[index])[0], size + 20, yPos + size/2 - 15, color);
-		text.Print(&(treeStrings[index+1])[0], size + 20, yPos + size/2, color);
-		text.Print(&(treeStrings[index+2])[0], size + 20, yPos + size/2 + 15, color);
+		int index = i*3;
+		int yPos = size + 15 + offset;
+		yPos += 15 + text.Print(&(treeStrings[index])[0], xPos, yPos, color, 0, size);
+		yPos += 15 + text.Print(&(treeStrings[index+1])[0], xPos, yPos, color, 0, size);
+		yPos += 15 + text.Print(&(treeStrings[index+2])[0], xPos, yPos, color, 0, size);
 	}
 	sprite->End();
 
@@ -139,26 +143,42 @@ void Game::HandleInput()
 	if(Input::GetKeyDown(DIK_F2) && engine)
 		engine->ToggleWireframe();
 	if(Input::GetKeyDown(DIK_F3))
-		UpdateImages();
+		UpdateImages(true);
+
+	if(Input::GetKeyDown(DIK_1))
+		CombineImages(0);
+	else if(Input::GetKeyDown(DIK_2))
+		CombineImages(1);
+	else if(Input::GetKeyDown(DIK_3))
+		CombineImages(2);
+
+	if(Input::GetKeyDown(DIK_UP))
+		offset += 50;
+	else if(Input::GetKeyDown(DIK_DOWN))
+		offset -= 50;
 }
 
-void Game::UpdateImages()
+void Game::UpdateImages(bool reset)
 {
-	if(trees)
+	if(!reset)
 	{
-		delete [] trees;
-		delete [] treeStrings;
+		for(int i=3; i<9; i++) //recreating missing trees
+			trees[i] = new Tree();
 	}
-
-	trees = new Tree[9];
-	treeStrings = new string[9];
+	else
+	{
+		trees = new Tree*[9];
+		treeStrings = new string[9];
+		for(int i=0; i<9; i++)
+			trees[i] = new Tree();
+	}
 	
 	for(int i=0; i<3; i++)
 	{
 		int index = i*3;
-		treeStrings[index] = "Red = " + trees[index].GetString();
-		treeStrings[index+1] = "Green = " + trees[index+1].GetString(); 
-		treeStrings[index+2] = "Blue = " + trees[index+2].GetString();
+		treeStrings[index] = "Red = " + trees[index]->GetString();
+		treeStrings[index+1] = "Green = " + trees[index+1]->GetString(); 
+		treeStrings[index+2] = "Blue = " + trees[index+2]->GetString();
 
 		D3DLOCKED_RECT lockedRect = {0};
 		if(FAILED(mainTexture[i]->LockRect(0, &lockedRect, NULL, D3DLOCK_DISCARD)))
@@ -172,13 +192,40 @@ void Game::UpdateImages()
 			for(int x=0; x<size; x++)
 			{
 				DWORD j = y * lockedRect.Pitch / 4 + x;
-				bytes[j] = D3DCOLOR_XRGB((int)trees[index].GetResult(x, y) % 256,
-										 (int)trees[index+1].GetResult(x, y) % 256,
-										 (int)trees[index+2].GetResult(x, y) % 256);
+				bytes[j] = D3DCOLOR_XRGB((int)trees[index]->GetResult(x, y) % 256,
+										 (int)trees[index+1]->GetResult(x, y) % 256,
+										 (int)trees[index+2]->GetResult(x, y) % 256);
 			}
 		}
 		mainTexture[i]->UnlockRect(0);
 	}
+}
+
+void Game::CombineImages(int selected)
+{
+	Tree *rTree = trees[selected * 3];
+	Tree *gTree = trees[selected * 3 + 1];
+	Tree *bTree = trees[selected * 3 + 2];
+
+	int ind1 = (selected + 1) % 3;
+	int ind2 = (selected + 2) % 3;
+	
+	for(int i=0; i<3; i++)
+	{
+		trees[selected * 3 + i]->ModifyCoeff(0.75f);
+		trees[ind1 * 3 + i]->ModifyCoeff(0.125f);
+		trees[ind2 * 3 + i]->ModifyCoeff(0.125f);
+	}
+
+	rTree->AttachTrees(trees[ind1 * 3], trees[ind2 * 3]);
+	gTree->AttachTrees(trees[ind1 * 3 + 1], trees[ind2 * 3 + 1]);
+	bTree->AttachTrees(trees[ind1 * 3 + 2], trees[ind2 * 3 + 2]);
+	
+	trees[0] = rTree;
+	trees[1] = gTree; 
+	trees[2] = bTree;
+
+	UpdateImages(false);
 }
 
 //entry point
@@ -193,7 +240,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		return 0;
 
 	//initing engine and window
-	if(!engine->Init("Engine", hInstance, 640, 3*(size + 50), true))
+	if(!engine->Init("Engine", hInstance, 3*(size + 50), 480, true))
 		return 0;
 
 	//launching the game loop

@@ -10,10 +10,10 @@ public:
 	Tree();
 	~Tree();
 
-	float GetCoeff();
-	void SetCoeff(float value);
+	void ModifyCoeff(float mod);
 	string GetString();
 	float GetResult(int x, int y);
+	void AttachTrees(Tree *t1, Tree *t2);
 
 	static const int MaxDepth = 5;
 private:
@@ -21,4 +21,5 @@ private:
 
 	float coeff;
 	TreeNode *head;
+	Tree *tNext;
 };

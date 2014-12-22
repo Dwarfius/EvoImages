@@ -23,13 +23,16 @@ public:
 	virtual void HandleInput();
 
 private:
-	void UpdateImages();
+	void UpdateImages(bool reset);
+	void CombineImages(int selected);
+	float Normalize(float val, float min, float max);
 
 	Engine *engine;
 	Camera camera;
 	LPDIRECT3DTEXTURE9 mainTexture[3];
 	TextRenderer text;
 	LPD3DXSPRITE sprite;
-	Tree *trees;
+	Tree **trees;
 	string *treeStrings;
+	int offset;
 };
